@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SingUP</title>
+</head>
+<body>
+    <div class="container">
+        <div class="">
+            <h2>Sign UP</h2>
+        </div>
+    </div>
+
+    <div class="container">
+        <div>
+            <form action="" method="post">
+                {% csrf_token %}
+                {{form.as_p}}
+                <button type="submit">SIGNUP</button>
+            </form>
+        </div>
+    </div>
+    
+</body>
+</html>
