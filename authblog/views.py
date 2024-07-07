@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.contrib.auth.decorators import login_required
 from .models import Comment, Blog
-
+from django.http import JsonResponse
 
 def blogHome(request):
     blogs = Blog.objects.all()
@@ -26,7 +26,13 @@ def blog_details(request, id):
             comment.author = request.user
             comment.blog = blog
             comment.save()
-            return redirect('blog_details', id=blog.id)
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'message': 'Comment added successfully!'}, status=200)
+            else:
+                return redirect('blog_details', id=blog.id)
+        else:
+            if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+                return JsonResponse({'errors': form.errors}, status=400)
     else:
         form = CommentForm()  
 
