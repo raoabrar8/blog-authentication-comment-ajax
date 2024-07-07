@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from .models import Comment, Blog
 
 
-def home(request):
+def blogHome(request):
     blogs = Blog.objects.all()
     return render(request, 'authblog/blogHome.html', {'blogs':blogs})
 
@@ -16,9 +16,9 @@ def home(request):
 @login_required
 def blog_details(request, id):
     blog = get_object_or_404(Blog, id=id)
-    comments = Comment.objects.all()
-    form = None
-    
+    comments = blog.comments.all()
+    form = None  # Initialize form as None by default
+
     if request.method == 'POST' and request.user.is_authenticated:
         form = CommentForm(request.POST)
         if form.is_valid():
@@ -26,13 +26,13 @@ def blog_details(request, id):
             comment.author = request.user
             comment.blog = blog
             comment.save()
-            return redirect(request, 'blog_details', id=blog.id)
+            return redirect('blog_details', id=blog.id)
     else:
-        form = CommentForm()
-        
-    return render(request, 'authblog/blog_details.html', {'form':form, 'comments':comments,'blog':blog})
+        form = CommentForm()  
 
-@login_required
+    return render(request, 'authblog/blog_details.html', {'blog': blog, 'comments': comments, 'form': form})
+
+# @login_required
 def create_blog(request):
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES)
@@ -44,7 +44,7 @@ def create_blog(request):
         
     else:
         form = BlogForm()
-    return render(request, 'authblog/blog_details.html', {'form':form})
+    return render(request, 'authblog/create_blog.html', {'form':form})
 
 @login_required
 def update_blog(request, id):
@@ -53,7 +53,7 @@ def update_blog(request, id):
         return redirect('blog_details', id=id)
     if request.method == 'POST':
         form = BlogForm(request.POST, request.FILES, instance=blog)
-        if form.is_svalid():
+        if form.is_valid():
             form.save()
             return redirect('blog_details', id=blog.id)
     else:
