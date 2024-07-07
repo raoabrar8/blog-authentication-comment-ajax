@@ -1,16 +1,91 @@
-from django.shortcuts import render, redirect
-from .forms import SignUpForm
+from django.shortcuts import render, redirect, get_object_or_404
+from .forms import SignUpForm, BlogForm, CommentForm
 # Create your views here.
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.db import IntegrityError
 from django.contrib.auth.decorators import login_required
+from .models import Comment, Blog
+
 
 def home(request):
-    return render(request, 'authblog/blogHome.html')
+    blogs = Blog.objects.all()
+    return render(request, 'authblog/blogHome.html', {'blogs':blogs})
+
+# Blog APp views
+@login_required
+def blog_details(request, id):
+    blog = get_object_or_404(Blog, id=id)
+    comments = Comment.objects.all()
+    form = None
+    
+    if request.method == 'POST' and request.user.is_authenticated:
+        form = CommentForm(request.POST)
+        if form.is_valid():
+            comment = form.save(commit=False)
+            comment.author = request.user
+            comment.blog = blog
+            comment.save()
+            return redirect(request, 'blog_details', id=blog.id)
+    else:
+        form = CommentForm()
+        
+    return render(request, 'authblog/blog_details.html', {'form':form, 'comments':comments,'blog':blog})
+
+@login_required
+def create_blog(request):
+    if request.method == 'POST':
+        form = BlogForm(request.POST, request.FILES)
+        if form.is_valid():
+            blog = form.save(commit=False)
+            blog.auhtor = request.user
+            blog.save()
+            return redirect('blogHome')
+        
+    else:
+        form = BlogForm()
+    return render(request, 'authblog/blog_details.html', {'form':form})
+
+@login_required
+def update_blog(request, id):
+    blog = get_object_or_404(Blog, id=id)
+    if blog.author != request.user:
+        return redirect('blog_details', id=id)
+    if request.method == 'POST':
+        form = BlogForm(request.POST, request.FILES, instance=blog)
+        if form.is_svalid():
+            form.save()
+            return redirect('blog_details', id=blog.id)
+    else:
+        form = BlogForm()
+    return render(request, 'authblog/update_blog.html', {'form':form, 'blog':blog})
+
+
+@login_required
+def delete_blog(request, id):
+    blog = get_object_or_404(Blog, id=id)
+    if blog.author != request.user:
+        return redirect('blog_details', id=id)
+    
+    if request.method == 'POST':
+        blog.delete()
+        return redirect('blogHome')
+    return render(request, 'authblog/delete_blog.html', {'blog':blog})
 
 
 
+
+
+
+
+
+
+# comment view
+
+
+
+
+# authentications views
 def signup(request):
     if request.method == 'POST':
         form = SignUpForm(request.POST)
@@ -43,7 +118,7 @@ def UserLogin(request):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('index')
+                return redirect('blogHome')
             else:
                 message = 'Credential Invalid!'
         except User.DoesNotExist:
@@ -56,9 +131,5 @@ def UserLogin(request):
             
 def Logout(request):
     logout(request)
-    return redirect('home')
-
-@login_required
-def index(request):
-    return render(request, 'authblog/index.html')
+    return redirect('blogHome')
     
